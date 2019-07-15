@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedSheeps.Wpf.EventToCommandGenerator", "RedSheeps.Wpf.EventToCommandGenerator\RedSheeps.Wpf.EventToCommandGenerator.csproj", "{33D17AA7-4FAF-4EEE-B347-8F02864668CD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedSheeps.Wpf.EventToCommandGenerator.Sample", "RedSheeps.Wpf.EventToCommandGenerator.Sample\RedSheeps.Wpf.EventToCommandGenerator.Sample.csproj", "{ACCD24A7-5806-4D92-BCFD-1B1C0BDCD16B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{33D17AA7-4FAF-4EEE-B347-8F02864668CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33D17AA7-4FAF-4EEE-B347-8F02864668CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33D17AA7-4FAF-4EEE-B347-8F02864668CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33D17AA7-4FAF-4EEE-B347-8F02864668CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACCD24A7-5806-4D92-BCFD-1B1C0BDCD16B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACCD24A7-5806-4D92-BCFD-1B1C0BDCD16B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACCD24A7-5806-4D92-BCFD-1B1C0BDCD16B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACCD24A7-5806-4D92-BCFD-1B1C0BDCD16B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A3EADE7-138E-43E3-81BB-7C40E29F8029}
+	EndGlobalSection
+EndGlobal
