@@ -7,15 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\RedSheeps.Wpf.EventToCommandGenerator\Content\EventToCommandGenerator.tt" Link="EventToCommandGenerator.tt">
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\RedSheeps.Wpf.EventToCommandGenerator\Content\SampleEventToCommand.tt" Link="SampleEventToCommand.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>SampleEventToCommand.cs</LastGenOutput>
-    </None>
+    <PackageReference Include="RedSheeps.Input" Version="0.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,17 +15,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Template1.cs">
+    <Compile Update="EventToCommands.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Template1.tt</DependentUpon>
+      <DependentUpon>EventToCommands.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Template1.tt">
+    <None Update="EventToCommands.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Template1.cs</LastGenOutput>
+      <LastGenOutput>EventToCommands.cs</LastGenOutput>
     </None>
   </ItemGroup>
 

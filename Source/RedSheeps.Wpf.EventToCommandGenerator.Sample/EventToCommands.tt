@@ -1,0 +1,11 @@
+﻿<#@ template debug="true" hostSpecific="true" #>
+<# 
+    Namespace = "RedSheeps.Wpf.EventToCommandGenerator.Sample.EventToCommand";
+	ClassSuffix = "Behavior";
+
+	LoadAssemblies();
+	var types = UIElements;
+
+	Events.Add("System.Windows.Window", "Loaded");
+#>
+<#@ include file="..\RedSheeps.Wpf.EventToCommandGenerator\Content\EventToCommandGenerator.tt" #>

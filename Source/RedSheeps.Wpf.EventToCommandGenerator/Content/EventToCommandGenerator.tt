@@ -3,12 +3,14 @@
 <#@ assembly Name="EnvDTE" #>
 <#@ assembly name="VSLangProj" #>
 <#@ assembly name="System.Reflection" #>
+<#@ assembly name="PresentationCore" #>
 <#@ import namespace="System.Diagnostics" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Reflection" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Windows" #>
 <#@ import namespace="EnvDTE" #>
 <#@ import namespace="Microsoft.VisualStudio.Shell.Interop" #>
 using System.Windows;
@@ -24,12 +26,12 @@ namespace <#= Namespace #> {
 	#region <#= attachedPropertyType.DestinationType #>
 	public static partial class <#= attachedPropertyType.DestinationType.Name #><#= ClassSuffix #> {
 <# 
-        foreach (var attachedProperty in attachedPropertyType.AttachedProperties.OrderBy(x => x.EventName))
+        foreach (var attachedProperty in attachedPropertyType.AttachedProperties.OrderBy(x => x.Name))
         {
 #>
 
         public static readonly DependencyProperty <#= attachedProperty.Name #> =
-            DependencyProperty.RegisterAttached("<#= attachedProperty.EventName #>", typeof(ICommand), typeof(<#= attachedPropertyType.DestinationType #>), new FrameworkPropertyMetadata(<#= attachedProperty.OnChangedName #>));
+            DependencyProperty.RegisterAttached("<#= attachedProperty.EventName #>", typeof(ICommand), typeof(<#= attachedPropertyType.DestinationType.Name #><#= ClassSuffix #>), new FrameworkPropertyMetadata(<#= attachedProperty.OnChangedName #>));
         
         public static ICommand <#= attachedProperty.GetMethodName #>(DependencyObject target)
         {
@@ -75,7 +77,26 @@ namespace <#= Namespace #> {
 <#+
 string Namespace;
 string ClassSuffix;
-List<InteractiveEvent> Events = new List<InteractiveEvent>();
+
+InteractiveEvents Events = new InteractiveEvents();
+
+IEnumerable<Type> _uiElements;
+
+IEnumerable<Type> UIElements
+{
+	get
+    {
+		if(_uiElements == null)
+        {
+			_uiElements =
+				LoadAssemblies()
+					.SelectMany(x => x.GetTypes())
+					.Where(x => x.IsSubclassOf(typeof(UIElement)));
+        }
+
+		return _uiElements;
+    }
+}
 
 IEnumerable<AttachedPropertyType> GetAttachedPropertyTypes()
 {
@@ -128,13 +149,22 @@ List<Assembly> LoadAssemblies()
 	return assemblies;
 }
 
-public class InteractiveEvent
+public class InteractiveEvents : List<InteractiveEvent>
 {
-	public InteractiveEvent(string typeName, string eventName) : this(typeName, eventName, string.Empty)
+	public void Add(string typeName, string eventName)
     {
+		Add(typeName, eventName, null);
     }
 
-	public InteractiveEvent(string typeName, string eventName, string eventParameterPath)
+	public void Add(string typeName, string eventName, string eventParameterPath)
+    {
+		Add(new InteractiveEvent(typeName, eventName, eventParameterPath));
+    }
+}
+
+public class InteractiveEvent
+{
+	public InteractiveEvent(string typeName, string eventName, string eventParameterPath = null)
     {
 		TypeName = typeName;
 		EventName = eventName;
