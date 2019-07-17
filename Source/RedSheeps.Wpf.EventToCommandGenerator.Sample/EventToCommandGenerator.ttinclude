@@ -1,0 +1,298 @@
+﻿<#@ IntelliSenseLanguage processor="tangibleT4Editor" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="Microsoft.VisualStudio.Shell.Interop.8.0" #>
+<#@ assembly Name="EnvDTE" #>
+<#@ assembly name="VSLangProj" #>
+<#@ assembly name="System.Reflection" #>
+<#@ assembly name="PresentationCore" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Reflection" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Windows" #>
+<#@ import namespace="EnvDTE" #>
+<#@ import namespace="Microsoft.VisualStudio.Shell.Interop" #>
+<# 
+	TypeProvider.Assemblies = LoadAssemblies();
+#>
+using System.Windows;
+using System.Windows.Input;
+<#+ 
+	void Generate(EventToCommands eventToCommands)
+	{
+		#>
+
+namespace <#= eventToCommands.Namespace #> {
+		<#+
+		foreach (var eventToCommand in eventToCommands.GetEventToCommands().GroupBy(x => x.Type).OrderBy(x => x))
+		{
+		#>
+
+	#region <#= eventToCommand.Key #>
+	public static partial class <#= eventToCommand.Key.Name #><#= eventToCommands.ClassSuffix #> {
+		<#+ 
+		#>
+
+	}
+	#endregion
+		<#+ 
+        }
+		#>
+
+}
+		<#+
+	}
+
+	public static class TypeProvider
+    {
+		public static List<Assembly> Assemblies { get; set;}
+
+		public static Type Resolve(string typeName)
+        {
+            foreach (var assembly in Assemblies)
+            {
+				var type = assembly.GetType(typeName);
+				if(type != null) return type;
+            }
+			throw new ArgumentException(typeName + " can not found.");
+        }
+    }
+
+	public class EventToCommands
+	{
+		private readonly List<EventToCommand> _eventToCommands = new List<EventToCommand>();
+
+		public EventToCommands(string @namespace)
+        {
+			Namespace = @namespace;
+			ClassSuffix = "Behavior";
+        }
+
+		public string Namespace { get; }
+
+		public string ClassSuffix { get; set; }
+
+		public IReadOnlyList<EventToCommand> GetEventToCommands()
+        {
+			return _eventToCommands;
+        }
+
+		public EventToCommands Add(string typeName, string eventName, string eventParameterPath)
+        {
+			if(string.IsNullOrEmpty(typeName)) throw new ArgumentException("typeName is null or empty.");
+			if(string.IsNullOrEmpty(eventName)) throw new ArgumentException("eventName is null or empty.");
+
+			var type = TypeProvider.Resolve(typeName);
+			var eventInfo = type.GetEvent(eventName);
+
+			if(eventInfo == null) throw new ArgumentException(eventName + " can not found.");
+
+			if(!string.IsNullOrEmpty(eventParameterPath) && !Exists(eventInfo, eventParameterPath))
+				throw new ArgumentException(eventParameterPath + " can not found.");
+
+			_eventToCommands.Add(new EventToCommand(type, eventInfo, eventParameterPath));
+
+			return this;
+        }
+
+		private bool Exists(EventInfo eventInfo, string eventParameterPath)
+        {
+			var eventHandlerType = eventInfo.EventHandlerType;
+			var invokeMethodInfo = eventHandlerType.GetMethod("Invoke");
+			var parameterType = invokeMethodInfo.GetParameters()[1].ParameterType;
+
+			var currentPropertyType = parameterType;
+            foreach (var propertyName in eventParameterPath.Split('.'))
+            {
+				var propertyInfo = currentPropertyType.GetProperty(propertyName);
+				if (propertyInfo == null) return false;
+
+				currentPropertyType = propertyInfo.PropertyType;
+            }
+			return true;
+        }
+	}
+
+	public class EventToCommand
+    {
+		public EventToCommand(Type type, EventInfo eventInfo, string eventParameterPath)
+        {
+			Type = type;
+			EventInfo = eventInfo;
+			EventParameterPath = eventParameterPath;
+        }
+
+		public Type Type { get; }
+		public EventInfo EventInfo { get; }
+		public string EventParameterPath { get; }
+    }
+
+
+
+
+	string Namespace;
+	string ClassSuffix;
+
+	InteractiveEvents Events = new InteractiveEvents();
+
+	IEnumerable<AttachedPropertyType> GetAttachedPropertyTypes()
+	{
+		var assemblies = LoadAssemblies();
+		var typeNames = Events.Select(x => x.TypeName).Distinct();
+		var attachedPropertyTypes =
+			typeNames
+				.Select(typeName => 
+					assemblies
+						.Select(assembly => assembly.GetType(typeName))
+						.Single(type => type != null))
+				.Select(type => new AttachedPropertyType(type))
+				.ToList();
+		foreach (var attachedPropertyType in attachedPropertyTypes)
+		{
+			foreach (var interactiveEvent in 
+				Events.Where(x => x.TypeName == attachedPropertyType.DestinationType.FullName))
+			{
+				attachedPropertyType.AddAttachedProperty(
+						new AttachedProperty(
+							attachedPropertyType.DestinationType, 
+							interactiveEvent.EventName,
+							interactiveEvent.EventParameterPath));
+			}
+		}
+		return attachedPropertyTypes;
+	}
+
+	List<Assembly> LoadAssemblies()
+	{
+		var dte = ((DTE)((IServiceProvider)Host).GetService(typeof(SDTE)));
+		var templateItem = dte.Solution.FindProjectItem(this.Host.TemplateFile);
+		var project = templateItem.ContainingProject;
+		var vsProject = project.Object as VSLangProj.VSProject;
+		var references = new List<VSLangProj.Reference>();
+		var assemblies = new List<Assembly>();
+		foreach(var referenceObj in vsProject.References)
+		{
+			var reference = (VSLangProj.Reference)referenceObj;
+			try
+			{
+				assemblies.Add(Assembly.LoadFile(reference.Path));
+				references.Add(reference);
+			}
+			catch
+			{
+				Debug.WriteLine(string.Format("Cannot load assembly. Assenbly name is {0}.", reference.Path));
+			}
+		}
+		return assemblies;
+	}
+
+	public class InteractiveEvents : List<InteractiveEvent>
+	{
+		public void Add(string typeName, string eventName)
+		{
+			Add(typeName, eventName, null);
+		}
+
+		public void Add(string typeName, string eventName, string eventParameterPath)
+		{
+			Add(new InteractiveEvent(typeName, eventName, eventParameterPath));
+		}
+	}
+
+	public class InteractiveEvent
+	{
+		public InteractiveEvent(string typeName, string eventName, string eventParameterPath = null)
+		{
+			TypeName = typeName;
+			EventName = eventName;
+			EventParameterPath = eventParameterPath;
+		}
+
+		public string TypeName { get; }
+		public string EventName { get; }
+		public string EventParameterPath { get; }
+	}
+
+	public class AttachedPropertyType
+	{
+		private readonly IList<AttachedProperty> _attachedProperties = new List<AttachedProperty>();
+
+		public AttachedPropertyType(Type type)
+		{
+			DestinationType = type;
+		}
+
+		public Type DestinationType { get; }
+
+		public IEnumerable<AttachedProperty> AttachedProperties
+		{
+			get { return _attachedProperties; }
+		}
+
+		public void AddAttachedProperty(AttachedProperty attachedProperty)
+		{
+			_attachedProperties.Add(attachedProperty);
+		}
+	}
+
+	public class AttachedProperty
+	{
+		public AttachedProperty(Type type, string eventName, string eventPropertyPath)
+		{
+			EventName = eventName;
+			if (string.IsNullOrEmpty(eventPropertyPath))
+			{
+				Name = string.Format("{0}Property", eventName);
+				GetMethodName = string.Format("Get{0}", eventName);
+				SetMethodName = string.Format("Set{0}", eventName);
+				OnChangedName = string.Format("On{0}Changed", eventName);
+				OnEventName = string.Format("On{0}", eventName);
+
+				var eventInfo = type.GetEvent(eventName);
+				var eventHandlerType = eventInfo.EventHandlerType;
+				var eventArgsType =
+					eventHandlerType.IsGenericType
+						? eventHandlerType.GenericTypeArguments.First()
+						: eventHandlerType.GetMethod("Invoke").GetParameters()[1].ParameterType;
+				EventArgs = eventArgsType.FullName;
+				EventPropertyPath = string.Empty;
+			}
+			else
+			{
+				var propertyNames = eventPropertyPath.Replace(".", string.Empty);
+				Name = string.Format("{0}Notify{1}Property", eventName, propertyNames);
+				GetMethodName = string.Format("Get{0}Notify{1}", eventName, propertyNames);
+				SetMethodName = string.Format("Set{0}Notify{1}", eventName, propertyNames);
+				OnChangedName = string.Format("On{0}Notify{1}Changed", eventName, propertyNames);
+				OnEventName = string.Format("On{0}Notify{1}", eventName, propertyNames);
+
+				var eventInfo = type.GetEvent(eventName);
+				var eventHandlerType = eventInfo.EventHandlerType;
+				var eventArgsType =
+					eventHandlerType.IsGenericType
+						? eventHandlerType.GenericTypeArguments.First()
+						: eventHandlerType.GetMethod("Invoke").GetParameters()[1].ParameterType;
+				EventArgs = eventArgsType.FullName;
+				EventPropertyPath = "." + eventPropertyPath;
+			}
+		}
+
+		public string EventName { get; }
+
+		public string EventArgs { get; }
+
+		public string Name { get; }
+
+		public string GetMethodName { get; }
+
+		public string SetMethodName { get; }
+
+		public string OnChangedName { get; }
+
+		public string OnEventName { get; }
+
+		public string EventPropertyPath { get; }
+	}
+#>

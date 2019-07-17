@@ -1,11 +1,10 @@
 ﻿<#@ template debug="true" hostSpecific="true" #>
+<#@ include file="EventToCommandGenerator.ttinclude" #>
 <# 
-    Namespace = "RedSheeps.Wpf.EventToCommandGenerator.Sample.EventToCommand";
-	ClassSuffix = "Behavior";
-
-	LoadAssemblies();
-	var types = UIElements;
-
-	Events.Add("System.Windows.Window", "Loaded");
+	Generate(
+		new EventToCommands("RedSheeps.Wpf.EventToCommand")
+			.Add("System.Windows.Window", "Loaded", "")
+			.Add("System.Windows.Window", "DragEnter", "RoutedEvent.Name")
+			//.Add("System.Windows.Window", "DragEnter", "RoutedEvent.Name.NotExists")
+	);
 #>
-<#@ include file="..\RedSheeps.Wpf.EventToCommandGenerator\Content\EventToCommandGenerator.tt" #>
